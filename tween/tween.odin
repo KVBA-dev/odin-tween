@@ -3,7 +3,6 @@ package tween
 import "base:runtime"
 import "core:mem"
 import "core:math"
-import rl "vendor:raylib"
 
 MAX_SEQUENCES :: 1024
 
@@ -23,7 +22,6 @@ Value :: union {
 	Value_Type([3]f64),
 	Value_Type([4]f64),
 	Value_Type([4]u8),
-	Value_Type(rl.Color),
 }
 
 Value_Type :: struct($T: typeid) {
@@ -187,10 +185,24 @@ tick :: proc(dt: f32) {
 			v.value^ = math.lerp(v.start, v.target, f64(t))
 		case Value_Type([4]f64):
 			v.value^ = math.lerp(v.start, v.target, f64(t))
-		case Value_Type(rl.Color):
-			v.value^ = rl.ColorLerp(v.start, v.target, f32(t))
 		case Value_Type([4]u8):
-			v.value^ = cast([4]u8)rl.ColorLerp(cast(rl.Color)v.start, cast(rl.Color)v.target, f32(t))
+			start := [4]f32 {
+				f32(v.start.r),
+				f32(v.start.g),
+				f32(v.start.b),
+				f32(v.start.a),
+			}
+			end := [4]f32 {
+				f32(v.target.r),
+				f32(v.target.g),
+				f32(v.target.b),
+				f32(v.target.a),
+			}
+			value := math.lerp(start, end, f32(t))
+			v.value.r = u8(math.round(value.r))
+			v.value.g = u8(math.round(value.g))
+			v.value.b = u8(math.round(value.b))
+			v.value.a = u8(math.round(value.a))
 		}
 	}
 
@@ -259,8 +271,6 @@ _set_start_value :: proc(act: ^Action) {
 	case Value_Type([3]f64):
 		v.start = v.value^
 	case Value_Type([4]f64):
-		v.start = v.value^
-	case Value_Type(rl.Color):
 		v.start = v.value^
 	case Value_Type([4]u8):
 		v.start = v.value^
