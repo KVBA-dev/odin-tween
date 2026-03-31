@@ -32,6 +32,10 @@ Value_Type :: struct($T: typeid) {
 
 Action :: struct {
 	value: Value,
+	on_finished: struct {
+		func: proc(data: rawptr),
+		data: rawptr,
+	},
 	duration: f32,
 	remaining: f32,
 	easing: Easing,
@@ -94,6 +98,7 @@ tick :: proc(dt: f32) {
 		act.remaining -= dt
 		t := math.clamp(1 - act.remaining / act.duration, 0, 1)
 		if act.remaining <= 0 {
+			act.on_finished.func(act.on_finished.data)
 			seq.current += 1
 			if seq.current == len(seq.actions) {
 				seq_to_delete[stdel_idx] = si
@@ -233,7 +238,7 @@ _bounce_out :: proc(t: f32) -> f32 {
 	}
 }
 
-make_tween :: proc(val: $E/^$T, target: T, duration: f32, easing: Easing, parent_sequence: ^Sequence = nil) {
+make_tween :: proc(val: $E/^$T, target: T, duration: f32, easing: Easing, parent_sequence: ^Sequence = nil) -> ^Action {
 	context.allocator = tween_alloc
 
 	seq := parent_sequence
@@ -248,7 +253,12 @@ make_tween :: proc(val: $E/^$T, target: T, duration: f32, easing: Easing, parent
 		duration = duration,
 		remaining = duration,
 		easing = easing,
+		on_finished = {
+			func = proc(_: rawptr) {},
+			data = nil,
+		},
 	})
+	return &seq.actions[len(seq.actions) - 1]
 }
 
 @(private)
